@@ -3,25 +3,30 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 import Temp from "./Temp.jsx";
+
 import video from "../assets/pixelbg.mp4";
+import GlassButton from "./Shared/GlassButton";
 
 /* ========================================================= */
 /*                  🔥 KEYFRAME ANIMATIONS 🔥                */
 /* ========================================================= */
+/* ========================================================= */
+/*                  🔥 KEYFRAME ANIMATIONS 🔥                */
+/* ========================================================= */
 const fadeIn = keyframes`
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 `;
 
-const blinkBorder = keyframes`
-  0%, 100% {
-    border-color: #00ffff;
-    box-shadow: 0 0 15px #00ffff, inset 0 0 10px #00ffff;
-  }
-  50% {
-    border-color: #ff00ff;
-    box-shadow: 0 0 25px #ff00ff, inset 0 0 15px #ff00ff;
-  }
+const float = keyframes`
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+`;
+
+const textShimmer = keyframes`
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
 `;
 
 /* ========================================================= */
@@ -33,35 +38,30 @@ const DarkContainer = styled.div`
   padding: 20px;
   min-height: 100vh;
   color: white;
-  font-family: "Press Start 2P", monospace;
-  background-color: black;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #000;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 70px;
   justify-content: center;
-  animation: ${fadeIn} 1s ease-in-out;
-  text-transform: uppercase;
+  animation: ${fadeIn} 1s ease-out;
   position: relative;
   z-index: 1;
+  overflow: hidden;
 
-  /* Scanlines */
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgba(0, 255, 0, 0.15),
-    rgba(0, 255, 0, 0.15) 1px,
-    transparent 1px,
-    transparent 2px
-  );
+  /* Dark Overlay for Video */
+  &::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6); /* Darken the video */
+    z-index: -1;
+  }
 
   @media (max-width: 768px) {
     gap: 40px;
     padding: 20px 15px;
-    font-size: 0.8rem;
-  }
-  
-  @media (max-width: 480px) {
-    font-size: 0.7rem;
   }
 `;
 
@@ -77,19 +77,30 @@ const BackgroundVideo = styled.video`
 const Navbar = styled.nav`
   width: 100%;
   max-width: 1200px;
-  padding: 20px 30px;
-  border: 3px solid #39ff14;
-  background-color: rgba(0, 0, 0, 0.7);
-  box-shadow: 0 0 15px #39ff14, inset 0 0 10px #39ff14;
+  padding: 15px 30px;
+  
+  /* Prism Glass Navbar */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0;
-  transition: 0.3s ease;
+  transition: all 0.3s ease;
   position: relative;
+  margin-top: 20px;
 
   &:hover {
-    animation: ${blinkBorder} 1s infinite;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
   }
 
   &.open .nav-links {
@@ -100,9 +111,10 @@ const Navbar = styled.nav`
 
   @media (max-width: 768px) {
     width: 95%;
-    padding: 10px 8px;
+    padding: 15px 20px;
     flex-direction: column;
     gap: 0;
+    border-radius: 20px;
   }
 `;
 
@@ -116,9 +128,9 @@ const MenuToggle = styled.button`
     width: 6px;
     height: 6px;
     margin: 3px 0;
-    background: #ff00ff;
+    background: rgba(255, 255, 255, 0.8);
     border-radius: 50%;
-    box-shadow: 0 0 6px #ff00ff;
+    box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
   }
 
   @media (max-width: 768px) {
@@ -154,21 +166,25 @@ const NavLink = styled(Link)`
   display: flex;
   align-items: center;
   gap: 10px;
-  color: #ff00ff;
+  color: rgba(255, 255, 255, 0.7);
   text-decoration: none;
   font-size: 1rem;
+  font-weight: 500;
   transition: 0.3s;
-  text-shadow: 0 0 5px #ff00ff;
+  padding: 8px 16px;
+  border-radius: 12px;
 
   &.main-link {
-    color: #00eaff;
-    text-shadow: 0 0 8px #00eaff;
-    font-weight: bold;
+    color: #fff;
+    font-weight: 600;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
   }
 
   &:hover {
-    color: #ffff00;
-    text-shadow: 0 0 10px #ffff00;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
   }
 `;
 
@@ -200,29 +216,85 @@ const OpalIcon = styled.div`
 const HeroContent = styled.div`
   text-align: center;
   max-width: 800px;
+  padding: 50px;
+  position: relative;
+  overflow: hidden;
+  
+  /* Base Glass Style */
+  background: rgba(255, 255, 255, 0.01);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 40px;
+  
+  box-shadow: 
+    0 20px 50px rgba(0, 0, 0, 0.4),
+    inset 0 0 30px rgba(255, 255, 255, 0.05);
+    
+  transition: all 0.4s ease;
+
+  &:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+  }
 
   h1 {
-    font-size: 2rem;
-    color: #00ff00;
-    margin-bottom: 25px;
-    text-shadow: 0 0 8px #00ff00, 0 0 15px #00ff00;
+    font-size: 3.5rem;
+    font-weight: 800;
+    
+    /* Holographic Text Effect */
+    background: linear-gradient(
+      90deg,
+      #ffffff 0%,
+      #00ffff 20%,
+      #ff00ff 40%,
+      #00ffff 60%,
+      #ffffff 80%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    
+    animation: ${textShimmer} 4s linear infinite;
+    
+    margin-bottom: 20px;
+    letter-spacing: -1px;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
   }
 
   .subtitle {
-    font-size: 1rem;
-    color: #00ffff;
+    font-size: 1.2rem;
+    color: rgba(255, 255, 255, 0.8);
     margin-bottom: 40px;
-    text-shadow: 0 0 7px #00ffff;
+    font-weight: 400;
+    line-height: 1.6;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
   }
 
   @media (max-width: 768px) {
+    padding: 30px 20px;
     h1 {
-      font-size: 1.6rem;
+      font-size: 2.2rem;
     }
     .subtitle {
-      font-size: 0.9rem;
+      font-size: 1rem;
     }
   }
+`;
+
+const LiquidLayer = styled.div`
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  right: -50%;
+  bottom: -50%;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  filter: url(#liquid-filter);
+  opacity: 0.6;
+  z-index: 0;
+  pointer-events: none;
 `;
 
 const NavigationButtons = styled.div`
@@ -238,87 +310,19 @@ const NavigationButtons = styled.div`
   }
 `;
 
-const NavigationButton = styled.button`
-  padding: 15px 30px;
-  font-family: "Press Start 2P", monospace;
-  background: rgba(0, 0, 0, 0.8);
-  color: #00ffff;
-  border: 3px solid #00ffff;
-  text-transform: uppercase;
-  cursor: pointer;
-  font-size: 16px;
-  transition: all 0.3s ease;
-  animation: ${blinkBorder} 3s infinite;
-  box-shadow: 0 0 15px #00ffff, inset 0 0 10px rgba(0, 255, 255, 0.1);
 
-  &:hover {
-    background: rgba(0, 255, 255, 0.1);
-    color: #ffffff;
-    border-color: #ffffff;
-    box-shadow: 0 0 25px #ffffff, inset 0 0 15px rgba(255, 255, 255, 0.1);
-    transform: translateY(-2px);
-  }
-
-  &:active {
-    transform: translateY(0);
-    background: rgba(255, 0, 255, 0.1);
-    border-color: #ff00ff;
-    color: #ff00ff;
-    box-shadow: 0 0 20px #ff00ff, inset 0 0 10px rgba(255, 0, 255, 0.1);
-  }
-
-  @media (max-width: 768px) {
-    padding: 12px 24px;
-    font-size: 14px;
-  }
-  
-  @media (max-width: 480px) {
-    padding: 10px 20px;
-    font-size: 12px;
-    width: 250px;
-  }
-`;
 
 const ActionButtons = styled.div`
   display: flex;
   justify-content: center;
   gap: 20px;
 
-  p {
-    padding: 15px 25px;
-    border: 3px solid #ff00ff;
-    background-color: transparent;
-    cursor: pointer;
-    color: #ff00ff;
-    box-shadow: 0 0 10px #ff00ff;
-    transition: 0.3s;
-    font-size: 16px;
-    font-family: "Press Start 2P", monospace;
-
-    &:hover {
-      background-color: #ff00ff;
-      color: black;
-      box-shadow: 0 0 20px #ff00ff, 0 0 35px #ff00ff;
-    }
-  }
-
   @media (max-width: 768px) {
     flex-direction: column;
-
-    p {
-      width: 80%;
-      margin: 0 auto;
-      font-size: 14px;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    p {
-      font-size: 12px;
-    }
+    width: 100%;
+    align-items: center;
   }
 `;
-
 /* ========================================================= */
 /*                         COMPONENT                         */
 /* ========================================================= */
@@ -333,6 +337,9 @@ export default function Dark() {
   const navRef = useRef(null);
   const tempRef = useRef(null);
   const [tempVisible, setTempVisible] = useState(false);
+
+  /* ------------ Liquid Animation Ref ------------ */
+  const turbulenceRef = useRef(null);
 
   /* ------------ Mobile Breakpoint Listener ------------ */
   useEffect(() => {
@@ -448,9 +455,49 @@ export default function Dark() {
     }
   }, [menuOpen, isMobile]);
 
+  /* ------------ Liquid Animation Loop ------------ */
+  useEffect(() => {
+    let frame;
+    let time = 0;
+
+    const animateLiquid = () => {
+      if (turbulenceRef.current) {
+        time += 0.002;
+        const val = 0.01 + Math.sin(time) * 0.005;
+        turbulenceRef.current.setAttribute("baseFrequency", `${val} ${val + 0.01}`);
+      }
+      frame = requestAnimationFrame(animateLiquid);
+    };
+
+    animateLiquid();
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   return (
     <DarkContainer>
       <BackgroundVideo src={video} autoPlay loop muted playsInline />
+
+      {/* ------------ LIQUID SVG FILTER ------------ */}
+      <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+        <defs>
+          <filter id="liquid-filter">
+            <feTurbulence
+              ref={turbulenceRef}
+              type="fractalNoise"
+              baseFrequency="0.01 0.02"
+              numOctaves="3"
+              result="noise"
+            />
+            <feDisplacementMap
+              in="SourceGraphic"
+              in2="noise"
+              scale="20"
+              xChannelSelector="R"
+              yChannelSelector="G"
+            />
+          </filter>
+        </defs>
+      </svg>
 
       {/* ------------ NAVBAR ------------ */}
       <Navbar ref={navRef} className={menuOpen ? "open" : ""}>
@@ -499,29 +546,35 @@ export default function Dark() {
 
       {/* ------------ HERO ------------ */}
       <HeroContent>
-        <h1>The best platform to get your designed sites</h1>
+        <LiquidLayer />
+        <div style={{ position: 'relative', zIndex: 2 }}>
+          <h1>The best platform to get your designed sites</h1>
 
-        <div className="subtitle">
-          The most powerful person is here to help you !
-        </div>
+          <div className="subtitle">
+            The most powerful person is here to help you !
+          </div>
 
-        {/* ------------ NAVIGATION BUTTONS ------------ */}
-        <NavigationButtons>
-          <NavigationButton onClick={() => navigate("/web")}>
-            Web Portfolio
-          </NavigationButton>
-          <NavigationButton onClick={() => navigate("/video")}>
-            Video Portfolio
-          </NavigationButton>
-        </NavigationButtons>
+          {/* ------------ NAVIGATION BUTTONS ------------ */}
+          <NavigationButtons>
+            <GlassButton onClick={() => navigate("/web")}>
+              Web Portfolio
+            </GlassButton>
+            <GlassButton onClick={() => navigate("/video")}>
+              Video Portfolio
+            </GlassButton>
+            <GlassButton onClick={() => navigate("/thumbnail")}>
+              Thumbnail Gallery
+            </GlassButton>
+          </NavigationButtons>
 
-        <ActionButtons>
-          <p>Get started now</p>
-          <p>Book a demo</p>
-        </ActionButtons>
+          <ActionButtons>
+            <GlassButton onClick={() => navigate("/")}>Get started now</GlassButton>
+            <GlassButton>Book a demo</GlassButton>
+          </ActionButtons>
 
-        <div style={{ marginTop: "24px", width: "100%" }}>
-          <Temp visible={tempVisible} rootRef={tempRef} />
+          <div style={{ marginTop: "24px", width: "100%" }}>
+            <Temp visible={tempVisible} rootRef={tempRef} />
+          </div>
         </div>
       </HeroContent>
     </DarkContainer>

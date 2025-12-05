@@ -1,20 +1,19 @@
 // src/components/Jet.jsx
-import React, { useEffect, useRef } from "react";
-import styled from "styled-components";
+import React, { useEffect, useRef, useState } from "react";
+import styled, { keyframes } from "styled-components";
 import { useNavigate } from "react-router-dom";
-import Web from "./Web/Web";
-import Video from "./Video/Video";
+import GlassButton from "./Shared/GlassButton";
+
 
 /* ---------------- Styled Components ---------------- */
 
 const JetRoot = styled.div`
   width: 100%;
   min-height: 100vh;
-  background-color: #121212;
-  color: white;
-  cursor: none;
+  background-color: #000;
+  color: #fff;
   overflow: hidden;
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 `;
 
 const MainContainer = styled.div`
@@ -23,56 +22,66 @@ const MainContainer = styled.div`
   height: 100vh;
 `;
 
-const TypingText = styled.h1`
-  position: absolute;
-  top: 40vh;
-  width: 100%;
-  text-align: center;
-  font-size: 3rem;
-  color: white;
-  opacity: 1;
-  transition: opacity 0.15s linear;
-  font-family: "Bitcount Prop Double Ink", system-ui;
+const fadeInUp = keyframes`
+  0% { opacity: 0; transform: translate(-50%, 30px); filter: blur(12px); }
+  100% { opacity: 1; transform: translate(-50%, 0); filter: none; }
 `;
 
-const MoreInfoButton = styled.button`
+const lightSweep = keyframes`
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+`;
+
+const CinematicText = styled.h1`
+  position: absolute;
+  top: 40vh;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  margin: 0;
+  white-space: nowrap;
+
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 4vw;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  
+  /* Smooth White Reveal Sweep */
+  background: linear-gradient(
+    120deg, 
+    transparent 20%,
+    rgba(255, 255, 255, 0.9) 50%,
+    transparent 80%
+  );
+  
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  
+  /* Entrance Animation */
+  animation: ${fadeInUp} 1.2s ease-out forwards, ${lightSweep} 6s linear infinite;
+  opacity: 0;
+
+  @media (max-width: 768px) {
+    font-size: 8vw;
+  }
+`;
+
+const ButtonContainer = styled.div`
   position: absolute;
   top: 60vh;
   left: 50%;
   transform: translateX(-50%);
-  padding: 14px 30px;
-  font-family: "Press Start 2P", monospace;
-  background: #111;
-  color: #0ff;
-  border: 3px solid #0ff;
-  text-transform: uppercase;
-  cursor: pointer;
   z-index: 10;
+  width: 100%;
+  display: flex;
+  justify-content: center;
 
-  &:hover {
-    background: #222;
-    color: #ff00ff;
-    border-color: #ff00ff;
+  @media (max-width: 480px) {
+    top: 55vh;
   }
-
-  &:active {
-    transform: translateX(-50%) scale(0.98);
-    background: #000;
-    border-color: #ffff00;
-    color: #ffff00;
-  }
-`;
-
-const CircleCursor = styled.div`
-  position: fixed;
-  width: 22px;
-  height: 22px;
-  background-color: #00ffff;
-  border-radius: 50%;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  z-index: 9999;
-  transition: background-color 0.3s linear;
 `;
 
 const StyledCanvas = styled.canvas`
@@ -80,86 +89,46 @@ const StyledCanvas = styled.canvas`
   top: 0;
   left: 0;
   z-index: 1;
+  pointer-events: none; /* Let clicks pass through to WaterEffect if needed, or handle interaction separately */
 `;
 
 /* ---------------- Component ---------------- */
 
 export default function Jet() {
   const canvasRef = useRef(null);
-  const textRef = useRef(null);
-  const cursorRef = useRef(null);
   const dots = useRef([]);
   const frameRef = useRef(null);
   const navigate = useNavigate();
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
 
-  /* ---------------- Typing Effect ---------------- */
+  /* ---------------- Custom Cursor & Interaction State ---------------- */
+  const mouseRef = useRef({ x: -1000, y: -1000 });
+
   useEffect(() => {
-    const element = textRef.current;
-    if (!element) return;
+    // Unified handler for mouse and touch
+    const updatePosition = (clientX, clientY) => {
+      mouseRef.current.x = clientX;
+      mouseRef.current.y = clientY;
+    };
 
-    const text = "Hello I am Abhi";
-    const typeSpeed = 120;
-    const fadeSpeed = 40;
-    const delayAfterComplete = 800;
+    function onMouseMove(e) {
+      updatePosition(e.clientX, e.clientY);
+    }
 
-    let index = 0;
-    let fading = false;
-
-    function typeLoop() {
-      if (!element) return;
-
-      if (!fading) {
-        element.textContent = text.slice(0, index);
-        index++;
-
-        if (index > text.length) {
-          fading = true;
-          setTimeout(typeLoop, delayAfterComplete);
-          return;
-        }
-      } else {
-        let opacity = parseFloat(element.style.opacity || "1");
-        opacity -= 0.05;
-        element.style.opacity = opacity;
-
-        if (opacity <= 0) {
-          fading = false;
-          index = 0;
-          element.style.opacity = 1;
-        }
+    function onTouchMove(e) {
+      if (e.touches.length > 0) {
+        updatePosition(e.touches[0].clientX, e.touches[0].clientY);
       }
-
-      setTimeout(typeLoop, fading ? fadeSpeed : typeSpeed);
     }
 
-    typeLoop();
-  }, []);
-
-  /* ---------------- Custom Cursor ---------------- */
-  useEffect(() => {
-    const cursor = cursorRef.current;
-    if (!cursor) return;
-
-    const colors = ["#ff4d4d", "#4dff4d", "#4d4dff", "#ffff4d", "#ff4dff"];
-    let ci = 0;
-
-    const colorCycle = setInterval(() => {
-      cursor.style.backgroundColor = colors[ci];
-      ci = (ci + 1) % colors.length;
-    }, 500);
-
-    function move(e) {
-      cursor.style.left = `${e.clientX}px`;
-      cursor.style.top = `${e.clientY}px`;
-    }
-
-    window.addEventListener("mousemove", move);
-    document.body.style.cursor = "none";
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchstart", onTouchMove, { passive: true });
 
     return () => {
-      clearInterval(colorCycle);
-      window.removeEventListener("mousemove", move);
-      document.body.style.cursor = "auto";
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchstart", onTouchMove);
     };
   }, []);
 
@@ -184,12 +153,30 @@ export default function Jet() {
 
     function initDots() {
       dots.current = [];
-      for (let x = spacing; x < width; x += spacing) {
-        for (let y = spacing; y < height; y += spacing) {
+
+      // Calculate number of columns and rows
+      const cols = Math.floor(width / spacing);
+      const rows = Math.floor(height / spacing);
+
+      // Calculate total dimensions of the grid
+      const gridWidth = (cols - 1) * spacing;
+      const gridHeight = (rows - 1) * spacing;
+
+      // Calculate starting offsets to center the grid
+      const startX = (width - gridWidth) / 2;
+      const startY = (height - gridHeight) / 2;
+
+      for (let i = 0; i < cols; i++) {
+        for (let j = 0; j < rows; j++) {
+          const x = startX + i * spacing;
+          const y = startY + j * spacing;
+
           dots.current.push({
             x, y,
             ox: x, oy: y,
             vx: 0, vy: 0,
+            phase: Math.random() * Math.PI * 2,
+            twinkleSpeed: 0.005 + Math.random() * 0.01
           });
         }
       }
@@ -198,9 +185,9 @@ export default function Jet() {
     function animate() {
       ctx.clearRect(0, 0, width, height);
 
-      const cursor = cursorRef.current;
-      const mx = cursor ? parseFloat(cursor.style.left) : -100;
-      const my = cursor ? parseFloat(cursor.style.top) : -100;
+      // Use the ref for coordinates instead of DOM reading (much faster & works for touch)
+      const mx = mouseRef.current.x;
+      const my = mouseRef.current.y;
 
       const allDots = dots.current;
 
@@ -211,36 +198,40 @@ export default function Jet() {
         const dist = Math.hypot(dx, dy);
 
         // repulsion
-        if (dist < repelDistance && dist > 1) {
+        if (dist < repelDistance) {
           const force = (repelDistance - dist) / repelDistance;
-          d.vx += (dx / dist) * force;
-          d.vy += (dy / dist) * force;
+          d.vx += (dx / dist) * force * 2; // Increased force slightly for better feel
+          d.vy += (dy / dist) * force * 2;
         }
 
         // pull back to original position
-        d.vx += (d.ox - d.x) * 0.015;
-        d.vy += (d.oy - d.y) * 0.015;
+        d.vx += (d.ox - d.x) * 0.05; // Stronger pull back
+        d.vy += (d.oy - d.y) * 0.05;
 
-        d.vx *= 0.92;
-        d.vy *= 0.92;
+        d.vx *= 0.9; // More friction
+        d.vy *= 0.9;
 
         d.x += d.vx;
         d.y += d.vy;
 
-        // draw dot
-        ctx.fillStyle = "rgba(0,255,255,0.25)";
+        // Twinkle effect
+        d.phase += d.twinkleSpeed;
+        const opacity = 0.1 + (Math.sin(d.phase) + 1) * 0.25;
+
+        // draw dot (WHITE for black background)
+        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
         ctx.beginPath();
-        ctx.arc(d.x, d.y, 2.3, 0, Math.PI * 2);
+        ctx.arc(d.x, d.y, 2, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // connect dots
+      // connect dots (WHITE lines)
       for (let i = 0; i < allDots.length; i++) {
         for (let j = i + 1; j < allDots.length; j++) {
           const dx = allDots[i].x - allDots[j].x;
           const dy = allDots[i].y - allDots[j].y;
           if (dx * dx + dy * dy < connectDistance * connectDistance) {
-            ctx.strokeStyle = "rgba(255,255,255,0.07)";
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
             ctx.lineWidth = 0.5;
             ctx.beginPath();
             ctx.moveTo(allDots[i].x, allDots[i].y);
@@ -266,12 +257,24 @@ export default function Jet() {
   return (
     <JetRoot>
       <MainContainer>
+        {/* StyledCanvas at z-index 1 */}
         <StyledCanvas ref={canvasRef} />
-        <TypingText ref={textRef} />
-        <MoreInfoButton onClick={() => navigate("/dark")}>
-          Wanna know more.
-        </MoreInfoButton>
-        <CircleCursor ref={cursorRef} />
+
+        <CinematicText>
+          VYNCEVISUAL
+        </CinematicText>
+        <ButtonContainer>
+          <GlassButton
+            onClick={() => navigate("/dark")}
+            onMouseEnter={() => setIsButtonHovered(true)}
+            onMouseLeave={() => setIsButtonHovered(false)}
+          >
+            f#ck me more.
+          </GlassButton>
+        </ButtonContainer>
+
+        {/* WaterEffect at z-index 100 (overlay) */}
+
       </MainContainer>
     </JetRoot>
   );
